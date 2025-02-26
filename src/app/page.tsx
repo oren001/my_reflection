@@ -1,46 +1,88 @@
-import Link from "next/link";
+'use client';
+
+import { useEffect, useState } from 'react';
 
 export default function Home() {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    console.log('[Home] Component mounted');
+    
+    // Listen for our custom navigation events
+    const handleNavStateChange = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      console.log('[Home] Navigation state changed:', customEvent.detail);
+    };
+    
+    window.addEventListener('navigationStateChange', handleNavStateChange);
+    
+    // Listen for popstate events
+    const handlePopState = () => {
+      console.log('[Home] PopState event detected');
+      console.log('[Home] Current path:', window.location.pathname);
+    };
+    
+    window.addEventListener('popstate', handlePopState);
+    
+    return () => {
+      window.removeEventListener('navigationStateChange', handleNavStateChange);
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, []);
+
+  const handleNavigation = (path: string, e: React.MouseEvent) => {
+    if (!mounted) return;
+    
+    console.log('[Home] Button clicked');
+    console.log('[Home] Target path:', path);
+    
+    e.preventDefault();
+    e.stopPropagation();
+    
+    try {
+      console.log('[Home] Attempting to update history');
+      window.history.pushState({ path }, '', path);
+      console.log('[Home] History updated successfully');
+      
+      console.log('[Home] Dispatching popstate event');
+      window.dispatchEvent(new PopStateEvent('popstate', { state: { path } }));
+      
+      // Dispatch a custom event for debugging
+      const navEvent = new CustomEvent('navigationStateChange', { detail: { path } });
+      window.dispatchEvent(navEvent);
+      console.log('[Home] Navigation events dispatched');
+    } catch (error) {
+      console.error('[Home] Error during navigation:', error);
+    }
+  };
+
+  console.log('[Home] Rendering component');
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-8">
-      <div>
-        <h2 className="text-2xl font-semibold text-center border p-4 font-mono rounded-md">
-          Get started by choosing a template path from the /paths/ folder.
-        </h2>
-      </div>
-      <div>
-        <h1 className="text-6xl font-bold text-center">Make anything you imagine 🪄</h1>
-        <h2 className="text-2xl text-center font-light text-gray-500 pt-4">
-          This whole page will be replaced when you run your template path.
-        </h2>
-      </div>
-      <div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="border rounded-lg p-6 hover:bg-gray-100 transition-colors">
-          <h3 className="text-xl font-semibold">AI Chat App</h3>
-          <p className="mt-2 text-sm text-gray-600">
-            An intelligent conversational app powered by AI models, featuring real-time responses
-            and seamless integration with Next.js and various AI providers.
-          </p>
-        </div>
-        <div className="border rounded-lg p-6 hover:bg-gray-100 transition-colors">
-          <h3 className="text-xl font-semibold">AI Image Generation App</h3>
-          <p className="mt-2 text-sm text-gray-600">
-            Create images from text prompts using AI, powered by the Replicate API and Next.js.
-          </p>
-        </div>
-        <div className="border rounded-lg p-6 hover:bg-gray-100 transition-colors">
-          <h3 className="text-xl font-semibold">Social Media App</h3>
-          <p className="mt-2 text-sm text-gray-600">
-            A feature-rich social platform with user profiles, posts, and interactions using
-            Firebase and Next.js.
-          </p>
-        </div>
-        <div className="border rounded-lg p-6 hover:bg-gray-100 transition-colors">
-          <h3 className="text-xl font-semibold">Voice Notes App</h3>
-          <p className="mt-2 text-sm text-gray-600">
-            A voice-based note-taking app with real-time transcription using Deepgram API, 
-            Firebase integration for storage, and a clean, simple interface built with Next.js.
-          </p>
+    <main className="min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center bg-gradient-to-b from-white to-gray-100">
+      <div className="text-center space-y-8">
+        <h1 className="text-6xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-purple-600">
+          Voice Clone
+        </h1>
+        <p className="text-xl text-gray-600 max-w-2xl">
+          Experience natural conversations with your AI companion. Choose between hold-to-speak or continuous chat modes.
+        </p>
+        <div className="flex justify-center space-x-4">
+          <a
+            href="/speak"
+            onClick={(e) => mounted && handleNavigation('/speak', e)}
+            className="px-8 py-4 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors duration-300 shadow-lg"
+          >
+            Hold to Speak
+          </a>
+          <a
+            href="/conversation"
+            onClick={(e) => mounted && handleNavigation('/conversation', e)}
+            className="px-8 py-4 bg-purple-500 text-white rounded-full hover:bg-purple-600 transition-colors duration-300 shadow-lg"
+          >
+            Continuous Chat
+          </a>
         </div>
       </div>
     </main>
